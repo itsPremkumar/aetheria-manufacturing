@@ -1,0 +1,2 @@
+[console_scripts]
+mfg-kg = aetheria_manufacturing.cli.cli:main

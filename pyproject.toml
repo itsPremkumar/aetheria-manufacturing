@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aetheria-manufacturing"
+version = "1.0.0"
+description = "Manufacturing Supply Chain Knowledge Graph"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+authors = [{ name = "PREM KUMAR", email = "premkumar@users.noreply.github.com" }]
+keywords = ["manufacturing", "supply-chain", "knowledge-graph"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = ["pydantic>=2.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0", "pytest-cov>=4.0"]
+dev = ["pytest>=8.0", "pytest-cov>=4.0"]
+
+[project.urls]
+Homepage = "https://github.com/itsPremkumar/aetheria-manufacturing"
+Repository = "https://github.com/itsPremkumar/aetheria-manufacturing"
+
+[project.scripts]
+mfg-kg = "aetheria_manufacturing.cli.cli:main"
+
+[tool.setuptools]
+packages = ["aetheria_manufacturing", "aetheria_manufacturing.extractors", "aetheria_manufacturing.graph", "aetheria_manufacturing.reasoning", "aetheria_manufacturing.api", "aetheria_manufacturing.cli"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-ra -q"
+markers = [
+    "slow: marks tests as slow",
+]
