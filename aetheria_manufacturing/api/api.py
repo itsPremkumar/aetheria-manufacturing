@@ -9,6 +9,7 @@ from ..graph.knowledge_graph import KnowledgeGraph
 from ..extractors.entity_extractor import ManufacturingEntityExtractor, EntityType
 from ..extractors.relation_extractor import ManufacturingRelationExtractor
 from ..reasoning.reasoning_engine import SupplyChainReasoningEngine
+from ..risk.risk_analyzer import SupplyChainRiskAnalyzer
 
 
 class KnowledgeGraphAPI:
@@ -19,6 +20,7 @@ class KnowledgeGraphAPI:
         self.entity_extractor = ManufacturingEntityExtractor()
         self.relation_extractor = ManufacturingRelationExtractor()
         self.reasoning = SupplyChainReasoningEngine(self.graph)
+        self.risk_analyzer = SupplyChainRiskAnalyzer(self.graph)
         self.host = host
         self.port = port
         self._server = None
@@ -50,6 +52,8 @@ class KnowledgeGraphAPI:
                     self._json_response(api.graph.get_statistics())
                 elif self.path == "/api/v1/supply-chain":
                     self._json_response(api._get_supply_chain())
+                elif self.path == "/api/v1/risk-report":
+                    self._json_response(api._get_risk_report())
                 elif self.path == "/api/v1/health":
                     self._json_response({"status": "healthy"})
                 elif self.path.startswith("/api/v1/entity/"):
@@ -112,6 +116,9 @@ class KnowledgeGraphAPI:
 
     def _get_supply_chain(self) -> Dict[str, Any]:
         return self.reasoning.get_supply_chain_report()
+
+    def _get_risk_report(self) -> Dict[str, Any]:
+        return self.risk_analyzer.get_supply_chain_risk_report()
 
     def _extract_from_text(self, data: Dict) -> Dict[str, Any]:
         text = data.get("text", "")

@@ -8,6 +8,7 @@ from ..graph.knowledge_graph import KnowledgeGraph
 from ..extractors.entity_extractor import ManufacturingEntityExtractor, EntityType
 from ..extractors.relation_extractor import ManufacturingRelationExtractor
 from ..reasoning.reasoning_engine import SupplyChainReasoningEngine
+from ..risk.risk_analyzer import SupplyChainRiskAnalyzer
 from ..api.api import KnowledgeGraphAPI
 
 
@@ -50,6 +51,16 @@ def create_parser() -> argparse.ArgumentParser:
 
     load_parser = subparsers.add_parser("load", help="Load sample data")
     load_parser.add_argument("--num-entities", type=int, default=500, help="Number of entities to generate")
+
+    risk_parser = subparsers.add_parser("risk", help="Risk analysis for a part")
+    risk_parser.add_argument("part_name", help="Part name to analyze")
+
+    reliability_parser = subparsers.add_parser("reliability", help="Supplier reliability metrics")
+    reliability_parser.add_argument("supplier_name", help="Supplier name to analyze")
+
+    disrupt_parser = subparsers.add_parser("disruptions", help="Predict supply chain disruptions")
+
+    risk_report_parser = subparsers.add_parser("risk-report", help="Generate comprehensive risk report")
 
     return parser
 
@@ -113,6 +124,26 @@ def handle_command(args, graph: KnowledgeGraph) -> str:
         new_graph = KnowledgeGraph.generate_sample_data(args.num_entities)
         graph.merge(new_graph)
         return format_output({"status": "loaded", "entities": len(graph.entities), "relations": len(graph.relations)})
+
+    elif args.command == "risk":
+        analyzer = SupplyChainRiskAnalyzer(graph)
+        risk = analyzer.calculate_risk_score(args.part_name)
+        return format_output(risk.to_dict())
+
+    elif args.command == "reliability":
+        analyzer = SupplyChainRiskAnalyzer(graph)
+        reliability = analyzer.calculate_supplier_reliability(args.supplier_name)
+        return format_output(reliability.to_dict())
+
+    elif args.command == "disruptions":
+        analyzer = SupplyChainRiskAnalyzer(graph)
+        predictions = analyzer.predict_disruptions()
+        return format_output([p.to_dict() for p in predictions])
+
+    elif args.command == "risk-report":
+        analyzer = SupplyChainRiskAnalyzer(graph)
+        report = analyzer.get_supply_chain_risk_report()
+        return format_output(report)
 
     return "Unknown command"
 

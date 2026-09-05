@@ -19,4 +19,6 @@ aetheria_manufacturing/graph/__init__.py
 aetheria_manufacturing/graph/knowledge_graph.py
 aetheria_manufacturing/reasoning/__init__.py
 aetheria_manufacturing/reasoning/reasoning_engine.py
+aetheria_manufacturing/risk/__init__.py
+aetheria_manufacturing/risk/risk_analyzer.py
 tests/test_aetheria_manufacturing.py

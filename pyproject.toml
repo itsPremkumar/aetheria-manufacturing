@@ -31,7 +31,7 @@ Repository = "https://github.com/itsPremkumar/aetheria-manufacturing"
 mfg-kg = "aetheria_manufacturing.cli.cli:main"
 
 [tool.setuptools]
-packages = ["aetheria_manufacturing", "aetheria_manufacturing.extractors", "aetheria_manufacturing.graph", "aetheria_manufacturing.reasoning", "aetheria_manufacturing.api", "aetheria_manufacturing.cli"]
+packages = ["aetheria_manufacturing", "aetheria_manufacturing.extractors", "aetheria_manufacturing.graph", "aetheria_manufacturing.reasoning", "aetheria_manufacturing.api", "aetheria_manufacturing.cli", "aetheria_manufacturing.risk"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
