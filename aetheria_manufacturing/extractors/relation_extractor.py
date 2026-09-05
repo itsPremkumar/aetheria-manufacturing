@@ -12,13 +12,11 @@ class RelationType(Enum):
     SUPPLIED_BY = "supplied_by"
     MANUFACTURED_AT = "manufactured_at"
     SHIPPED_TO = "shipped_to"
-    REQUIRES = "requires"
     CONTAINS = "contains"
     DEPENDS_ON = "depends_on"
     PRODUCED_BY = "produced_by"
     LOCATED_AT = "located_at"
     USES_MATERIAL = "uses_material"
-    USES_PROCESS = "uses_process"
 
 
 @dataclass
@@ -55,14 +53,11 @@ class ManufacturingRelationExtractor:
         (RelationType.MANUFACTURED_AT, r'(?P<facility>[\w\s,.-]+?)\s+manufactures\s+(?P<part>[\w\s#-]+?)(?:\.|,|;|$|\bfor\b)'),
         (RelationType.SHIPPED_TO, r'(?P<part>[\w\s#-]+?)\s+is\s+shipped\s+to\s+(?P<destination>[\w\s,.-]+?)(?:\.|,|;|$|\bfrom\b)'),
         (RelationType.SHIPPED_TO, r'(?P<part>[\w\s#-]+?)\s+ships\s+to\s+(?P<destination>[\w\s,.-]+?)(?:\.|,|;|$|\bfrom\b)'),
-        (RelationType.REQUIRES, r'(?P<part>[\w\s#-]+?)\s+requires\s+(?P<requirement>[\w\s#-]+?)(?:\.|,|;|$|\bfor\b)'),
-        (RelationType.REQUIRES, r'(?P<process>[\w\s#-]+?)\s+requires\s+(?P<resource>[\w\s#-]+?)(?:\.|,|;|$|\bfor\b)'),
         (RelationType.CONTAINS, r'(?P<product>[\w\s#-]+?)\s+contains\s+(?P<component>[\w\s#-]+?)(?:\.|,|;|$|\bwhich\b)'),
         (RelationType.DEPENDS_ON, r'(?P<part>[\w\s#-]+?)\s+depends?\s+on\s+(?P<dependency>[\w\s#-]+?)(?:\.|,|;|$|\bfor\b)'),
         (RelationType.PRODUCED_BY, r'(?P<product>[\w\s#-]+?)\s+is\s+produced\s+by\s+(?P<producer>[\w\s&.,]+?)(?:\.|,|;|$|\bat\b)'),
         (RelationType.LOCATED_AT, r'(?P<entity>[\w\s#-]+?)\s+is\s+located\s+(?:at|in)\s+(?P<location>[\w\s,.-]+?)(?:\.|,|;|$|\bnear\b)'),
         (RelationType.USES_MATERIAL, r'(?P<part>[\w\s#-]+?)\s+uses\s+(?P<material>[\w\s]+?)(?:\.|,|;|$|\bfor\b)'),
-        (RelationType.USES_PROCESS, r'(?P<part>[\w\s#-]+?)\s+uses\s+(?P<process>[\w\s]+?)(?:\.|,|;|$|\bfor\b)'),
     ]
 
     def __init__(self):
@@ -105,9 +100,6 @@ class ManufacturingRelationExtractor:
         elif rel_type == RelationType.SHIPPED_TO:
             source_name = groups.get("part", "").strip()
             target_name = groups.get("destination", "").strip()
-        elif rel_type == RelationType.REQUIRES:
-            source_name = groups.get("part", groups.get("process", "")).strip()
-            target_name = groups.get("requirement", groups.get("resource", "")).strip()
         elif rel_type == RelationType.CONTAINS:
             source_name = groups.get("product", "").strip()
             target_name = groups.get("component", "").strip()
@@ -168,8 +160,6 @@ class ManufacturingRelationExtractor:
             return EntityType.SUPPLIER
         elif any(kw in name_lower for kw in ['plant', 'factory', 'facility', 'warehouse', 'center']):
             return EntityType.FACILITY
-        elif any(kw in name_lower for kw in ['process', 'machining', 'line', 'cnc']):
-            return EntityType.PROCESS
         elif any(kw in name_lower for kw in ['material', 'alloy', 'steel', 'polymer', 'composite']):
             return EntityType.MATERIAL
         elif any(kw in name_lower for kw in ['product', 'model', 'series']):

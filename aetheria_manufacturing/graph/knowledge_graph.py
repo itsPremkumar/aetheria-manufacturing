@@ -198,13 +198,6 @@ class KnowledgeGraph:
             "Factory Alpha", "Factory Beta", "Factory Gamma", "Factory Delta"
         ]
 
-        processes = [
-            "CNC Machining", "Injection Molding", "Die Casting", "Stamping",
-            "Welding", "Assembly Line", "Heat Treatment", "Surface Finishing",
-            "Quality Control", "Packaging", "Painting", "Plating",
-            "Extrusion", "Forging", "Bending", "Cutting"
-        ]
-
         materials = [
             "Steel Alloy", "Aluminum 6061", "Carbon Fiber", "Titanium Grade 5",
             "ABS Plastic", "Polycarbonate", "Stainless Steel", "Copper C110",
@@ -230,10 +223,6 @@ class KnowledgeGraph:
         for name in facilities:
             graph.add_entity(Entity(name=name, entity_type=EntityType.FACILITY, confidence=0.95))
 
-        # Add processes
-        for name in processes:
-            graph.add_entity(Entity(name=name, entity_type=EntityType.PROCESS, confidence=0.90))
-
         # Add materials
         for name in materials:
             graph.add_entity(Entity(name=name, entity_type=EntityType.MATERIAL, confidence=0.90))
@@ -243,27 +232,29 @@ class KnowledgeGraph:
             graph.add_entity(Entity(name=name, entity_type=EntityType.PRODUCT, confidence=0.90))
 
         # Generate parts to reach num_entities
-        fixed_entities = len(suppliers) + len(facilities) + len(processes) + len(materials) + len(product_lines)
+        fixed_entities = len(suppliers) + len(facilities) + len(materials) + len(product_lines)
         num_parts = max(num_entities - fixed_entities, 100)
 
         part_prefixes = ["Gear", "Bolt", "Nut", "Washer", "Bearing", "Shaft", "Housing",
                          "Bracket", "Flange", "Seal", "Gasket", "Spring", "Valve", "Pump",
-                         "Cylinder", "Piston", "Cam", "Rod", "Link", "Arm"]
-        part_suffixes = list(range(1, 100))
+                         "Cylinder", "Piston", "Cam", "Rod", "Link", "Arm",
+                         "Bushing", "Spacer", "Retainer", "Clip", "Pin", "Key"]
+        part_suffixes = list(range(1, 200))
 
+        parts_generated = 0
         for prefix in part_prefixes:
             for suffix in part_suffixes:
-                if len(graph.find_entities_by_type(EntityType.PART)) >= num_parts:
+                if parts_generated >= num_parts:
                     break
                 name = f"{prefix}-{suffix:03d}"
                 graph.add_entity(Entity(name=name, entity_type=EntityType.PART, confidence=0.85))
-            if len(graph.find_entities_by_type(EntityType.PART)) >= num_parts:
+                parts_generated += 1
+            if parts_generated >= num_parts:
                 break
 
         # Add relations
         all_suppliers = graph.find_entities_by_type(EntityType.SUPPLIER)
         all_facilities = graph.find_entities_by_type(EntityType.FACILITY)
-        all_processes = graph.find_entities_by_type(EntityType.PROCESS)
         all_materials = graph.find_entities_by_type(EntityType.MATERIAL)
         all_products = graph.find_entities_by_type(EntityType.PRODUCT)
         all_parts = graph.find_entities_by_type(EntityType.PART)
@@ -288,24 +279,18 @@ class KnowledgeGraph:
                 facility = random.choice(all_facilities)
                 graph.add_relation(Relation(source=part, target=facility, relation_type=RelationType.SHIPPED_TO))
 
-        # requires: parts -> parts (dependencies)
+        # depends_on: parts -> parts (dependencies)
         for part in all_parts:
             if random.random() < 0.3:
                 other = random.choice(all_parts)
                 if other.id != part.id:
-                    graph.add_relation(Relation(source=part, target=other, relation_type=RelationType.REQUIRES))
+                    graph.add_relation(Relation(source=part, target=other, relation_type=RelationType.DEPENDS_ON))
 
         # uses_material: parts -> materials
         for part in all_parts:
             if random.random() < 0.5:
                 material = random.choice(all_materials)
                 graph.add_relation(Relation(source=part, target=material, relation_type=RelationType.USES_MATERIAL))
-
-        # uses_process: parts -> processes
-        for part in all_parts:
-            if random.random() < 0.4:
-                process = random.choice(all_processes)
-                graph.add_relation(Relation(source=part, target=process, relation_type=RelationType.USES_PROCESS))
 
         # contains: products -> parts
         for product in all_products:

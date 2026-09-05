@@ -31,8 +31,32 @@ class TestManufacturingEntityExtractor:
         entities = self.extractor.extract_parts(text)
         assert len(entities) > 0
 
+    def test_extract_parts_component(self):
+        text = "The component brake-pad needs replacement."
+        entities = self.extractor.extract_parts(text)
+        assert len(entities) > 0
+
+    def test_extract_parts_assembly(self):
+        text = "The engine assembly is ready for shipment."
+        entities = self.extractor.extract_parts(text)
+        assert len(entities) > 0
+
+    def test_extract_parts_empty_text(self):
+        entities = self.extractor.extract_parts("")
+        assert len(entities) == 0
+
     def test_extract_suppliers(self):
         text = "The widget is supplied by Acme Corp."
+        entities = self.extractor.extract_suppliers(text)
+        assert len(entities) > 0
+
+    def test_extract_suppliers_vendor(self):
+        text = "Vendor: Global Supplies Inc. provides the materials."
+        entities = self.extractor.extract_suppliers(text)
+        assert len(entities) > 0
+
+    def test_extract_suppliers_manufactured_by(self):
+        text = "The product is manufactured by TechCorp Industries."
         entities = self.extractor.extract_suppliers(text)
         assert len(entities) > 0
 
@@ -41,9 +65,9 @@ class TestManufacturingEntityExtractor:
         entities = self.extractor.extract_facilities(text)
         assert len(entities) > 0
 
-    def test_extract_processes(self):
-        text = "Process: CNC Machining is used for production."
-        entities = self.extractor.extract_processes(text)
+    def test_extract_facilities_warehouse(self):
+        text = "Store at warehouse east-side until needed."
+        entities = self.extractor.extract_facilities(text)
         assert len(entities) > 0
 
     def test_extract_materials(self):
@@ -71,6 +95,13 @@ class TestManufacturingEntityExtractor:
         assert d["name"] == "test"
         assert d["type"] == "supplier"
 
+    def test_entity_types(self):
+        assert EntityType.PART.value == "part"
+        assert EntityType.SUPPLIER.value == "supplier"
+        assert EntityType.FACILITY.value == "facility"
+        assert EntityType.MATERIAL.value == "material"
+        assert EntityType.PRODUCT.value == "product"
+
 
 # =============================================================================
 # Relation Extractor Tests
@@ -95,16 +126,34 @@ class TestManufacturingRelationExtractor:
         relations = self.extractor.extract_relations(text)
         assert len(relations) > 0
 
-    def test_extract_requires(self):
-        text = "The assembly requires the motor unit."
+    def test_extract_contains(self):
+        text = "The product assembly contains the motor unit."
         relations = self.extractor.extract_relations(text)
         assert len(relations) > 0
+
+    def test_extract_empty_text(self):
+        relations = self.extractor.extract_relations("")
+        assert len(relations) == 0
 
     def test_extract_with_entity_linking(self):
         text = "The widget is supplied by Acme Corp and manufactured at Plant A."
         entities, relations = self.extractor.extract_with_entity_linking(text)
         assert len(entities) > 0
         assert len(relations) > 0
+
+    def test_relation_to_dict(self):
+        source = Entity(name="part-1", entity_type=EntityType.PART)
+        target = Entity(name="supplier-1", entity_type=EntityType.SUPPLIER)
+        relation = Relation(source=source, target=target, relation_type=RelationType.SUPPLIED_BY)
+        d = relation.to_dict()
+        assert d["relation"] == "supplied_by"
+        assert d["source"]["name"] == "part-1"
+        assert d["target"]["name"] == "supplier-1"
+
+    def test_relation_types(self):
+        assert RelationType.SUPPLIED_BY.value == "supplied_by"
+        assert RelationType.MANUFACTURED_AT.value == "manufactured_at"
+        assert RelationType.SHIPPED_TO.value == "shipped_to"
 
 
 # =============================================================================
@@ -127,6 +176,12 @@ class TestKnowledgeGraph:
         rid = self.graph.add_relation(relation)
         assert len(self.graph.relations) == 1
 
+    def test_get_entity(self):
+        entity = Entity(name="test-part", entity_type=EntityType.PART)
+        eid = self.graph.add_entity(entity)
+        retrieved = self.graph.get_entity(eid)
+        assert retrieved.name == "test-part"
+
     def test_find_entities_by_name(self):
         self.graph.add_entity(Entity(name="brake-pad", entity_type=EntityType.PART))
         self.graph.add_entity(Entity(name="brake-disc", entity_type=EntityType.PART))
@@ -138,6 +193,31 @@ class TestKnowledgeGraph:
         self.graph.add_entity(Entity(name="supplier-1", entity_type=EntityType.SUPPLIER))
         results = self.graph.find_entities_by_type(EntityType.PART)
         assert len(results) == 1
+
+    def test_get_relations_from(self):
+        source = Entity(name="part-1", entity_type=EntityType.PART)
+        target = Entity(name="supplier-1", entity_type=EntityType.SUPPLIER)
+        relation = Relation(source=source, target=target, relation_type=RelationType.SUPPLIED_BY)
+        self.graph.add_relation(relation)
+        relations = self.graph.get_relations_from(source.id)
+        assert len(relations) == 1
+
+    def test_get_relations_to(self):
+        source = Entity(name="part-1", entity_type=EntityType.PART)
+        target = Entity(name="supplier-1", entity_type=EntityType.SUPPLIER)
+        relation = Relation(source=source, target=target, relation_type=RelationType.SUPPLIED_BY)
+        self.graph.add_relation(relation)
+        relations = self.graph.get_relations_to(target.id)
+        assert len(relations) == 1
+
+    def test_get_neighbors(self):
+        source = Entity(name="part-1", entity_type=EntityType.PART)
+        target = Entity(name="supplier-1", entity_type=EntityType.SUPPLIER)
+        relation = Relation(source=source, target=target, relation_type=RelationType.SUPPLIED_BY)
+        self.graph.add_relation(relation)
+        neighbors = self.graph.get_neighbors(source.id)
+        assert len(neighbors) == 1
+        assert neighbors[0].name == "supplier-1"
 
     def test_find_path(self):
         e1 = Entity(name="part-1", entity_type=EntityType.PART)
@@ -151,6 +231,22 @@ class TestKnowledgeGraph:
         assert path is not None
         assert len(path) == 3
 
+    def test_find_path_no_connection(self):
+        e1 = Entity(name="part-1", entity_type=EntityType.PART)
+        e2 = Entity(name="part-2", entity_type=EntityType.PART)
+        self.graph.add_entity(e1)
+        self.graph.add_entity(e2)
+        path = self.graph.find_path(e1.id, e2.id)
+        assert path is None
+
+    def test_get_suppliers_for_part(self):
+        part = Entity(name="widget", entity_type=EntityType.PART)
+        supplier = Entity(name="Acme", entity_type=EntityType.SUPPLIER)
+        relation = Relation(source=part, target=supplier, relation_type=RelationType.SUPPLIED_BY)
+        self.graph.add_relation(relation)
+        suppliers = self.graph.get_suppliers_for_part("widget")
+        assert len(suppliers) > 0
+
     def test_get_statistics(self):
         self.graph.add_entity(Entity(name="part-1", entity_type=EntityType.PART))
         self.graph.add_entity(Entity(name="supplier-1", entity_type=EntityType.SUPPLIER))
@@ -161,6 +257,11 @@ class TestKnowledgeGraph:
         self.graph.add_entity(Entity(name="part-1", entity_type=EntityType.PART))
         self.graph.add_entity(Entity(name="supplier-1", entity_type=EntityType.SUPPLIER))
         result = self.graph.query(entity_type=EntityType.PART)
+        assert len(result["entities"]) == 1
+
+    def test_query_by_name(self):
+        self.graph.add_entity(Entity(name="brake-pad", entity_type=EntityType.PART))
+        result = self.graph.query(name_contains="brake")
         assert len(result["entities"]) == 1
 
     def test_to_json(self):
@@ -214,6 +315,10 @@ class TestSupplyChainReasoningEngine:
             result = self.engine.analyze_supplier_criticality(suppliers[0].name)
             assert "supplier" in result
 
+    def test_analyze_unknown_supplier(self):
+        result = self.engine.analyze_supplier_criticality("Unknown-Supplier")
+        assert "error" in result
+
     def test_find_bottlenecks(self):
         bottlenecks = self.engine.find_bottlenecks()
         assert isinstance(bottlenecks, list)
@@ -222,6 +327,12 @@ class TestSupplyChainReasoningEngine:
         report = self.engine.get_supply_chain_report()
         assert "summary" in report
         assert "risk_assessment" in report
+
+    def test_find_alternative_suppliers(self):
+        parts = self.graph.find_entities_by_type(EntityType.PART)
+        if parts:
+            alternatives = self.engine.find_alternative_suppliers(parts[0].name)
+            assert isinstance(alternatives, list)
 
     def test_cost_optimization(self):
         parts = self.graph.find_entities_by_type(EntityType.PART)

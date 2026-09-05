@@ -45,7 +45,6 @@ class SupplyChainReasoningEngine:
             "suppliers": [],
             "manufacturing_facilities": [],
             "shipment_destinations": [],
-            "requirements": [],
             "dependencies": [],
         }
 
@@ -64,11 +63,6 @@ class SupplyChainReasoningEngine:
                     })
                 elif rel.relation_type == RelationType.SHIPPED_TO:
                     result["shipment_destinations"].append({
-                        "name": rel.target.name,
-                        "confidence": rel.confidence,
-                    })
-                elif rel.relation_type == RelationType.REQUIRES:
-                    result["requirements"].append({
                         "name": rel.target.name,
                         "confidence": rel.confidence,
                     })
@@ -389,11 +383,6 @@ class SupplyChainReasoningEngine:
         if len(dependencies) > 5:
             risk_score += 15
             risk_factors.append("high_dependency_count")
-
-        requirements = supply_chain["requirements"]
-        if len(requirements) > 5:
-            risk_score += 10
-            risk_factors.append("high_requirement_count")
 
         # Cap at 100
         risk_score = min(risk_score, 100)

@@ -1,6 +1,7 @@
 """Entity extractor for Manufacturing Supply Chain."""
 
 import re
+import uuid
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
 from enum import Enum
@@ -10,7 +11,6 @@ class EntityType(Enum):
     PART = "part"
     SUPPLIER = "supplier"
     FACILITY = "facility"
-    PROCESS = "process"
     MATERIAL = "material"
     PRODUCT = "product"
 
@@ -25,7 +25,7 @@ class Entity:
 
     def __post_init__(self):
         if self.id is None:
-            self.id = f"{self.entity_type.value}_{hash(self.name) % 10000:04d}"
+            self.id = f"{self.entity_type.value}_{str(uuid.uuid4())[:8]}"
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -63,14 +63,6 @@ class ManufacturingEntityExtractor:
         r'\b(distribution\s+center\s+[\w-]+)\b',
     ]
 
-    PROCESS_PATTERNS = [
-        r'\b(process[:\s]+[\w\s-]+?)(?:\.|,|;|$|\bused\b)',
-        r'\b([\w-]+\s+machining)\b',
-        r'\b([\w-]+\s+assembly\s+line)\b',
-        r'\b([\w-]+\s+production\s+process)\b',
-        r'\b(cnc\s+[\w-]+)\b',
-    ]
-
     MATERIAL_PATTERNS = [
         r'\b(material[:\s]+[\w\s-]+?)(?:\.|,|;|$|\bis\b)',
         r'\b([\w-]+\s+alloy)\b',
@@ -92,7 +84,6 @@ class ManufacturingEntityExtractor:
         self._part_regex = [re.compile(p, re.IGNORECASE) for p in self.PART_PATTERNS]
         self._supplier_regex = [re.compile(p, re.IGNORECASE) for p in self.SUPPLIER_PATTERNS]
         self._facility_regex = [re.compile(p, re.IGNORECASE) for p in self.FACILITY_PATTERNS]
-        self._process_regex = [re.compile(p, re.IGNORECASE) for p in self.PROCESS_PATTERNS]
         self._material_regex = [re.compile(p, re.IGNORECASE) for p in self.MATERIAL_PATTERNS]
         self._product_regex = [re.compile(p, re.IGNORECASE) for p in self.PRODUCT_PATTERNS]
 
@@ -130,17 +121,6 @@ class ManufacturingEntityExtractor:
                     entities.append(Entity(name=name, entity_type=EntityType.FACILITY, confidence=0.82))
         return entities
 
-    def extract_processes(self, text: str) -> List[Entity]:
-        entities = []
-        seen = set()
-        for regex in self._process_regex:
-            for match in regex.finditer(text):
-                name = match.group(1).strip()
-                if name.lower() not in seen:
-                    seen.add(name.lower())
-                    entities.append(Entity(name=name, entity_type=EntityType.PROCESS, confidence=0.78))
-        return entities
-
     def extract_materials(self, text: str) -> List[Entity]:
         entities = []
         seen = set()
@@ -168,7 +148,6 @@ class ManufacturingEntityExtractor:
         all_entities.extend(self.extract_parts(text))
         all_entities.extend(self.extract_suppliers(text))
         all_entities.extend(self.extract_facilities(text))
-        all_entities.extend(self.extract_processes(text))
         all_entities.extend(self.extract_materials(text))
         all_entities.extend(self.extract_products(text))
         return all_entities
