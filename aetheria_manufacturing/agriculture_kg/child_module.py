@@ -292,7 +292,7 @@ class IrrigationScheduler:
         """Get schedules for a crop/soil."""
         results = [s for s in self.schedules if s.crop_id == crop_id]
         if soil_id:
-            results = [s for r in results if s.soil_id == soil_id]
+            results = [s for s in results if s.soil_id == soil_id]
         return results
 
     def add_schedule(self, schedule: IrrigationSchedule) -> None:

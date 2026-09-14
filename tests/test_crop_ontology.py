@@ -1,7 +1,11 @@
-"""Tests for crop_ontology_soilgrids.py."""
+"""Tests for crop_ontology.py and soilgrids integration."""
+
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
-from crop_ontology_soilgrids import (
+from aetheria_manufacturing.agriculture_kg.crop_ontology import (
     CropTrait, SoilProperty, CropOntology, SoilGrids, OntologyIntegrator,
 )
 

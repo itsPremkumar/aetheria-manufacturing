@@ -1,7 +1,11 @@
 """Tests for disease_prediction.py."""
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pytest
-from disease_prediction import (
+from aetheria_manufacturing.agriculture_kg.disease_prediction import (
     Disease, PredictionResult, EnvironmentalConditions, Severity,
     DiseasePredictor,
 )
